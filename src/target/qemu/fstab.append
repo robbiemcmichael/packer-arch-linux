@@ -1,0 +1,2 @@
+# Home partition
+/dev/disk/by-label/HOME    /home    ext4    rw,relatime    0 2

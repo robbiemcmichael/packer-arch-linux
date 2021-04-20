@@ -1,0 +1,72 @@
+{
+    "variables": {
+        "iso_url": "https://mirror.rackspace.com/archlinux/iso/{{ isotime \"2006.01\" }}.01/archlinux-{{ isotime \"2006.01\" }}.01-x86_64.iso",
+        "iso_checksum": "file:https://mirror.rackspace.com/archlinux/iso/{{ isotime \"2006.01\" }}.01/sha1sums.txt",
+        "hostname": "arch",
+        "user": "user",
+        "tmp_password": "tmp",
+        "time_zone": "UTC",
+        "lang": "en_US.UTF-8",
+        "locale": "en_US.UTF-8 UTF-8",
+        "keymap": "us",
+        "target": "qemu"
+    },
+    "builders": [
+        {
+            "type": "qemu",
+            "vm_name": "root.qcow2",
+            "output_directory": "img",
+            "iso_url": "{{ user `iso_url` }}",
+            "iso_checksum": "{{ user `iso_checksum` }}",
+            "shutdown_command": "poweroff",
+            "shutdown_timeout": "1h",
+            "disk_size": "3500M",
+            "disk_cache": "none",
+            "skip_compaction": true,
+            "format": "qcow2",
+            "accelerator": "kvm",
+            "ssh_username": "root",
+            "ssh_password": "{{ user `tmp_password` }}",
+            "net_device": "virtio-net",
+            "disk_interface": "virtio",
+            "boot_wait": "1s",
+            "boot_command": [
+                "<enter><wait60s>",
+                "echo 'root:{{ user `tmp_password` }}' | chpasswd<enter>"
+            ],
+            "boot_key_interval": "10ms",
+            "cpus": 2,
+            "memory": 2048
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "file",
+            "source": "src",
+            "destination": "/var/tmp/"
+        },
+        {
+            "type": "shell",
+            "environment_vars": [
+                "PACKER_HOSTNAME={{ user `hostname` }}",
+                "PACKER_USER={{ user `user` }}",
+                "PACKER_TMP_PASSWORD={{ user `tmp_password` }}",
+                "PACKER_TIME_ZONE={{ user `time_zone` }}",
+                "PACKER_LANG={{ user `lang` }}",
+                "PACKER_LOCALE={{ user `locale` }}",
+                "PACKER_KEYMAP={{ user `keymap` }}",
+                "PACKER_TARGET={{ user `target` }}",
+                "PACKER_PACMAN_PORT={{ user `pacman_port` }}"
+            ],
+            "inline": [
+                "env",
+                "/var/tmp/src/install/main.sh",
+                "cp -R /var/tmp/src /mnt/var/tmp/src",
+                "arch-chroot /mnt /var/tmp/src/configure/main.sh",
+                "arch-chroot /mnt /var/tmp/src/common/main.sh",
+                "arch-chroot /mnt /var/tmp/src/target/{{ user `target` }}/main.sh",
+                "/var/tmp/src/cleanup/main.sh"
+            ]
+        }
+    ]
+}
